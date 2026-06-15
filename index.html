@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>運送案件マッチングシステム デモ｜サファリテック</title>
+<style>
+  :root{
+    --bg:#eef2f6; --panel:#ffffff; --ink:#22303f; --sub:#6b7686; --line:#cfd9e4;
+    --side:#d4e3f1; --side-2:#c5d8ec; --side-ink:#1f3a5f; --side-active:#ffffff;
+    --blue:#3d6fb1; --blue-d:#315c95; --green:#4d9d63; --green-d:#3f8553;
+    --navy:#2f4a6b; --warn:#c0392b; --warnbg:#fbecea; --pend:#9a6a00; --pendbg:#fdf3df;
+    --okbg:#e7f4ec; --ok:#2f8a4e; --th:#eef3f9;
+    --shadow:0 1px 2px rgba(20,40,70,.05),0 8px 24px rgba(20,40,70,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;
+    background:var(--bg);color:var(--ink);font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  button{font-family:inherit;cursor:pointer}
+  input,select,textarea{font-family:inherit;font-size:14px}
+  a{color:var(--blue)}
+
+  /* ===== top bar ===== */
+  header{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:14px;padding:0 18px;height:54px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.02em;font-size:15px}
+  .brand .mk{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#3d6fb1,#5b9bd5);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700}
+  .spacer{flex:1}
+  .role-switch{display:flex;align-items:center;gap:7px}
+  .role-switch label{font-size:11px;color:var(--sub)}
+  .role-switch select{padding:6px 9px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);font-size:12.5px}
+  .mail-btn{position:relative;border:1px solid var(--line);background:#fff;border-radius:7px;padding:7px 11px;color:var(--ink);font-size:12.5px}
+  .mail-btn .badge{position:absolute;top:-7px;right:-7px;background:var(--warn);color:#fff;border-radius:10px;
+    font-size:11px;min-width:18px;height:18px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+  .logout{color:var(--sub);font-size:12.5px;text-decoration:none;border:none;background:none;padding:6px 4px}
+  .logout:hover{color:var(--ink)}
+
+  /* ===== shell ===== */
+  .shell{display:flex;min-height:calc(100vh - 54px)}
+  aside{width:212px;flex-shrink:0;background:var(--side);border-right:1px solid var(--side-2);padding:14px 12px}
+  aside .me{font-size:12px;color:var(--side-ink);padding:6px 8px 12px;border-bottom:1px solid var(--side-2);margin-bottom:10px;line-height:1.5}
+  aside .me b{display:block;font-size:13.5px;margin-bottom:2px}
+  aside .nav{display:flex;flex-direction:column;gap:4px}
+  aside .nav button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:none;background:none;
+    color:var(--side-ink);padding:9px 11px;border-radius:8px;font-size:13.5px;font-weight:600}
+  aside .nav button:hover{background:var(--side-2)}
+  aside .nav button.active{background:var(--side-active);box-shadow:0 1px 3px rgba(30,58,95,.12)}
+  aside .nav .ic{width:18px;text-align:center;opacity:.8}
+  aside .reset{margin-top:18px;border:1px solid var(--side-2);background:rgba(255,255,255,.5);color:var(--side-ink);
+    width:100%;padding:7px;border-radius:7px;font-size:11.5px}
+
+  main{flex:1;padding:24px 28px 70px;min-width:0}
+  .crumb{font-size:12px;color:var(--sub);margin-bottom:6px}
+  h1{font-size:19px;margin:0 0 4px}
+  .lead{color:var(--sub);font-size:13px;margin:0 0 18px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);margin-bottom:16px}
+  .card .hd{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .card .hd h2{font-size:14.5px;margin:0}
+  .card .bd{padding:16px}
+
+  /* buttons */
+  .btn{border:1px solid var(--blue);background:var(--blue);color:#fff;border-radius:8px;padding:8px 15px;font-size:13px;font-weight:600}
+  .btn:hover{background:var(--blue-d);border-color:var(--blue-d)}
+  .btn.green{background:var(--green);border-color:var(--green)}
+  .btn.green:hover{background:var(--green-d);border-color:var(--green-d)}
+  .btn.navy{background:var(--navy);border-color:var(--navy)}
+  .btn.navy:hover{filter:brightness(.93)}
+  .btn.ghost{background:#fff;color:var(--blue)}
+  .btn.ghost:hover{background:#eef4fb}
+  .btn.light{background:#eef1f5;color:var(--ink);border-color:var(--line)}
+  .btn.light:hover{background:#e3e8ef}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.sm{padding:6px 11px;font-size:12px}
+
+  /* table */
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  .bordered th,.bordered td{border:1px solid var(--line)}
+  th,td{text-align:left;padding:9px 11px;vertical-align:middle}
+  thead th{background:var(--th);color:#3a4a5d;font-weight:600;font-size:12px}
+  tbody tr.zebra:nth-child(even){background:#fafcfe}
+  .row-click{cursor:pointer}
+  .row-click:hover{background:#eef5fc}
+  .listtable td{border-bottom:1px solid var(--line)}
+  .listtable tr:last-child td{border-bottom:none}
+
+  .status{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:5px;white-space:nowrap}
+  .s-open{background:var(--pendbg);color:var(--pend)}
+  .s-done{background:var(--okbg);color:var(--ok)}
+  .s-lost{background:var(--warnbg);color:var(--warn)}
+  .s-applied{background:#e9eef4;color:var(--sub)}
+
+  /* forms */
+  form .field{margin-bottom:13px}
+  form label{display:block;font-size:12.5px;color:var(--sub);margin-bottom:5px;font-weight:600}
+  form input[type=text],form input[type=number],form input[type=date],form input[type=time],form input[type=email],form input[type=password],form select,form textarea{
+    width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+  form textarea{min-height:64px;resize:vertical}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .pubs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+  .pub{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:13px}
+  .pub input{width:auto}
+  .filterbar{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;background:#f6f9fc;border:1px solid var(--line);border-radius:9px;padding:12px;margin-bottom:14px}
+  .filterbar .field{margin:0}
+  .filterbar input,.filterbar select{padding:7px 9px;border:1px solid var(--line);border-radius:7px}
+
+  /* detail table (配車依頼表 style) */
+  .spec{width:100%;border-collapse:collapse;font-size:13px}
+  .spec th,.spec td{border:1px solid var(--line);padding:9px 11px}
+  .spec th{background:var(--th);width:130px;color:#3a4a5d;font-weight:600;text-align:left}
+
+  .pill-row{display:flex;gap:9px;flex-wrap:wrap}
+  .back{background:none;border:none;color:var(--blue);font-size:13px;padding:0;margin-bottom:12px}
+  .empty{padding:36px 16px;text-align:center;color:var(--sub);font-size:13px}
+  .num{font-variant-numeric:tabular-nums}
+  .countbar{font-size:12.5px;color:var(--sub);margin:0 0 8px}
+  .countbar b{color:var(--ink)}
+
+  /* mail drawer */
+  .drawer-bg{position:fixed;inset:0;background:rgba(20,30,50,.35);z-index:40;display:none}
+  .drawer{position:fixed;top:0;right:0;width:420px;max-width:92vw;height:100%;background:#fff;z-index:50;
+    transform:translateX(100%);transition:transform .22s ease;display:flex;flex-direction:column;box-shadow:-8px 0 30px rgba(20,40,70,.16)}
+  .drawer.open{transform:none}
+  .drawer .dh{padding:14px 17px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .drawer .dh b{font-size:14.5px}
+  .drawer .dh .x{margin-left:auto;border:none;background:none;font-size:20px;color:var(--sub);cursor:pointer}
+  .drawer .db{overflow:auto;padding:12px 15px;flex:1}
+  .mail{border:1px solid var(--line);border-radius:9px;padding:11px 12px;margin-bottom:10px}
+  .mail .mt{font-size:11px;color:var(--sub);display:flex;gap:8px;margin-bottom:5px;flex-wrap:wrap}
+  .mail .mto{font-weight:700;color:var(--blue-d)}
+  .mail .ms{font-weight:700;font-size:13px;margin-bottom:4px}
+  .mail .mb{font-size:12.5px;color:#48515f;white-space:pre-wrap}
+  .mail-note{font-size:11.5px;color:var(--sub);background:#f4f8fc;border:1px dashed var(--line);border-radius:8px;padding:9px 11px;margin-bottom:12px}
+
+  /* toast */
+  .toast-wrap{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:8px;align-items:center}
+  .toast{background:#22303f;color:#fff;padding:11px 18px;border-radius:9px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.2);
+    display:flex;align-items:center;gap:9px;animation:pop .2s ease}
+  .toast .d{width:7px;height:7px;border-radius:50%;background:#69d39a}
+  @keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  .hint{background:#eaf2fb;border:1px solid #cfe0f4;color:#274a78;border-radius:9px;padding:11px 14px;font-size:12.5px;margin-bottom:16px;display:flex;gap:9px}
+  .hint b{color:#1d3a66}
+  .footer-note{margin-top:24px;color:var(--sub);font-size:11.5px;line-height:1.8}
+  .kv{display:grid;grid-template-columns:130px 1fr;gap:6px 14px;font-size:13.5px}
+  .kv dt{color:var(--sub)} .kv dd{margin:0;font-weight:600}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><span class="mk">運</span>運送案件マッチングシステム</div>
+  <div class="spacer"></div>
+  <div class="role-switch">
+    <label>アカウント切替</label>
+    <select id="roleSel" onchange="switchRole(this.value)"></select>
+  </div>
+  <button class="mail-btn" onclick="openDrawer()">通知メール<span class="badge" id="mailBadge">0</span></button>
+  <button class="logout" onclick="alert('デモのため、ログアウトは無効化しています。')">ログアウト</button>
+</header>
+
+<div class="shell">
+  <aside id="side"></aside>
+  <main id="main"></main>
+</div>
+
+<!-- mail drawer -->
+<div class="drawer-bg" id="drawerBg" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="dh"><b>送信された通知メール</b><button class="x" onclick="closeDrawer()">×</button></div>
+  <div class="db" id="mailList"></div>
+</div>
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+/* ============ 疑似DB（ブラウザ内のみ・実メール送信なし） ============ */
+const LS_KEY='unso_demo_v2';
+const SUBS=[
+  {id:'c1',name:'丸進運輸',email:'haisha@marushin-t.co.jp',user:'山田 健一'},
+  {id:'c2',name:'浪速ロジスティクス',email:'info@naniwa-logi.jp',user:'井上 三郎'},
+  {id:'c3',name:'関西陸運',email:'busha@kansai-riku.co.jp',user:'高橋 守'},
+  {id:'c4',name:'大阪急配',email:'tenpai@osaka-kyuhai.jp',user:'佐藤 浩'},
+];
+const PRIME={id:'prime',name:'自社（配車課）',email:'haisha@example-unso.co.jp',user:'配車課 米村'};
+const ROLES=[{...PRIME,type:'prime'},...SUBS.map(s=>({id:s.id,type:'sub',name:s.name,email:s.email,user:s.user}))];
+
+function seed(){
+  return {
+    cur:'prime', tab:{prime:'cases',sub:'cases'}, _t:1180,
+    cases:[
+      { id:'CS-1042', title:'食品定温 大阪→名古屋 10t', shipper:'カネサ食品㈱',
+        from:'大阪府茨木市（茨木DC）', to:'愛知県小牧市（小牧センター）',
+        runDate:'2026-06-18', truck:'10tウィング', price:48000,
+        note:'定温5℃管理。パレット16枚、手積みなし。',
+        publishTo:['c1','c2','c4'], status:'open',
+        apps:[
+          {id:'AP-1',sub:'c1',enter:'07:30',ttype:'10tウィング',plate:'なにわ100 あ 12-34',driver:'山田 健一',tel:'090-1111-2222',price:46000,status:'applied',at:'06/16 09:12'},
+          {id:'AP-2',sub:'c4',enter:'08:00',ttype:'10t平ボディ',plate:'大阪500 か 56-78',driver:'佐藤 浩',tel:'090-3333-4444',price:47500,status:'applied',at:'06/16 10:40'},
+        ]},
+      { id:'CS-1043', title:'雑貨 大阪→東京 4t チャーター', shipper:'ナニワ商事㈱',
+        from:'大阪府東大阪市', to:'東京都江東区', runDate:'2026-06-19', truck:'4t箱', price:62000,
+        note:'夜間出発希望。緩衝材必須。', publishTo:['c2','c3'], status:'open', apps:[]},
+    ],
+    mails:[],
+  };
+}
+let DB=load();
+function load(){ try{const r=localStorage.getItem(LS_KEY);return r?JSON.parse(r):seed();}catch(e){return seed();} }
+function save(){ localStorage.setItem(LS_KEY,JSON.stringify(DB)); }
+function resetDemo(){ if(confirm('デモのデータを初期状態に戻します。よろしいですか？')){DB=seed();save();view={name:'list'};render();} }
+
+/* ============ helpers ============ */
+const $=id=>document.getElementById(id);
+let view={name:'list',caseId:null};
+function curRole(){ return ROLES.find(r=>r.id===DB.cur); }
+function isPrime(){ return curRole().type==='prime'; }
+function subName(id){ return (SUBS.find(s=>s.id===id)||{}).name||id; }
+function subEmail(id){ return (SUBS.find(s=>s.id===id)||{}).email||''; }
+function yen(n){ return '¥'+Number(n).toLocaleString('ja-JP'); }
+function caseById(id){ return DB.cases.find(c=>c.id===id); }
+function go(name,caseId){ view={name,caseId};render(); }
+function nav(tab){ DB.tab[curRole().type]=tab; view={name:tab==='cases'?'list':tab}; save(); render(); }
+
+function sendMail(to,toName,subject,body){ DB.mails.unshift({to,toName,subject,body,at:nowStr(),read:false}); }
+function nowStr(){ DB._t=(DB._t||1180)+7; const m=DB._t; const hh=String(9+Math.floor(m/60)%14).padStart(2,'0'); return '06/16 '+hh+':'+String(m%60).padStart(2,'0'); }
+function toast(msg){ const el=document.createElement('div');el.className='toast';el.innerHTML='<span class="d"></span>'+msg;
+  $('toasts').appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);},2600); }
+
+/* ============ role / drawer ============ */
+function switchRole(id){ DB.cur=id; save(); view={name:'list'}; render(); }
+function openDrawer(){ $('drawerBg').style.display='block'; $('drawer').classList.add('open'); DB.mails.forEach(m=>m.read=true); save(); renderMailBadge(); }
+function closeDrawer(){ $('drawerBg').style.display='none'; $('drawer').classList.remove('open'); }
+function renderMailBadge(){ const n=DB.mails.filter(m=>!m.read).length; const b=$('mailBadge'); b.textContent=n; b.style.display=n?'flex':'none'; }
+function renderMailList(){
+  const w=$('mailList');
+  if(!DB.mails.length){ w.innerHTML='<div class="empty">まだ通知メールはありません。<br>案件登録・応募・発注の操作で自動送信されます。</div>'; return; }
+  w.innerHTML='<div class="mail-note">デモ環境のため実送信は行わず、ここに送信内容を表示しています。本番は選択先のアドレスへ自動配信します。</div>'+
+    DB.mails.map(m=>`<div class="mail"><div class="mt"><span>${m.at}</span><span class="mto">To: ${m.toName}</span><span>&lt;${m.to}&gt;</span></div>
+      <div class="ms">${m.subject}</div><div class="mb">${m.body}</div></div>`).join('');
+}
+
+/* ============ actions ============ */
+function registerCase(e){
+  e.preventDefault(); const f=e.target;
+  const pubs=[...f.querySelectorAll('input[name=pub]:checked')].map(c=>c.value);
+  if(!pubs.length){ alert('公開先（2次請会社）を1社以上選択してください。'); return; }
+  const n=DB.cases.filter(c=>/^CS-10/.test(c.id)).length;
+  const id='CS-'+(1044+n);
+  DB.cases.unshift({ id, title:f.title.value, shipper:f.shipper.value, from:f.from.value, to:f.to.value,
+    runDate:f.runDate.value, truck:f.truck.value, price:Number(f.price.value||0), note:f.note.value,
+    publishTo:pubs, status:'open', apps:[] });
+  pubs.forEach(p=>sendMail(subEmail(p),subName(p),`【新規案件のお知らせ】${f.title.value}`,
+    `${subName(p)} ご担当者様\n\n新しい配車案件が公開されました。ログインのうえご応募ください。\n\n案件番号：${id}\n運行日：${f.runDate.value}\n区間：${f.from.value} → ${f.to.value}\n車種：${f.truck.value}\n想定単価：${yen(f.price.value||0)}\n\n──────────\n運送案件マッチングシステム（自社配車課）`));
+  save(); toast(`${pubs.length}社へ案件通知メールを送信しました`);
+  DB.tab.prime='cases'; go('detail',id);
+}
+function applyCase(e,caseId){
+  e.preventDefault(); const f=e.target,c=caseById(caseId);
+  const num=Math.max(0,...c.apps.map(a=>+a.id.split('-')[1]))+1;
+  const app={ id:'AP-'+num, sub:DB.cur, enter:f.enter.value, ttype:f.ttype.value, plate:f.plate.value,
+    driver:f.driver.value, tel:f.tel.value, price:Number(f.price.value||0), status:'applied', at:nowStr() };
+  c.apps.push(app);
+  sendMail(PRIME.email,PRIME.name,`【応募通知】${c.title}`,
+    `${subName(app.sub)} より応募がありました。\n\n案件：${c.id} ${c.title}\n乗務員：${app.driver}／${app.ttype}／${app.plate}\n入場：${app.enter}　希望単価：${yen(app.price)}\n\nタスク一覧よりご確認ください。`);
+  save(); toast('応募を送信しました'); go('detail',caseId);
+}
+function order(caseId,appId){
+  const c=caseById(caseId);
+  if(!confirm('この応募者に発注します。同案件の他の応募者には失注通知が自動送信されます。よろしいですか？')) return;
+  c.status='done';
+  c.apps.forEach(a=>{
+    if(a.id===appId){ a.status='won';
+      sendMail(subEmail(a.sub),subName(a.sub),`【ご発注のお知らせ】${c.title}`,
+        `${subName(a.sub)} ご担当者様\n\n下記案件をご発注いたします。配車依頼表をダウンロードのうえ手配をお願いします。\n\n案件番号：${c.id}\n運行日：${c.runDate}\n区間：${c.from} → ${c.to}\n乗務員：${a.driver}／${a.plate}\n単価：${yen(a.price)}\n\n──────────\n運送案件マッチングシステム（自社配車課）`);
+    } else if(a.status==='applied'){ a.status='lost';
+      sendMail(subEmail(a.sub),subName(a.sub),`【今回のご縁について】${c.title}`,
+        `${subName(a.sub)} ご担当者様\n\n誠に恐れ入りますが、案件番号 ${c.id} は他社様への発注となりました。\nまたの機会によろしくお願いいたします。\n\n──────────\n運送案件マッチングシステム（自社配車課）`);
+    }
+  });
+  save();
+  const won=c.apps.find(a=>a.id===appId); const lost=c.apps.filter(a=>a.status==='lost').length;
+  toast(`発注完了：${subName(won.sub)}へ発注通知${lost?`／${lost}社へ失注通知`:''}`); go('detail',caseId);
+}
+
+/* ============ 配車依頼表 PDF ============ */
+function haishaPDF(caseId){
+  const c=caseById(caseId); const a=c.apps.find(x=>x.status==='won');
+  if(!a){ alert('発注済の応募がありません。'); return; }
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><title>配車依頼表_${c.id}</title>
+  <style>@page{size:A4;margin:16mm}body{font-family:"Yu Gothic","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;color:#22303f;margin:0}
+  .doc{max-width:720px;margin:0 auto}h1{font-size:22px;letter-spacing:.3em;text-align:center;margin:0 0 4px;border-bottom:3px solid #22303f;padding-bottom:8px}
+  .meta{display:flex;justify-content:space-between;font-size:12px;color:#555;margin:10px 0 18px}
+  h2{font-size:13px;background:#2f4a6b;color:#fff;padding:5px 10px;margin:18px 0 0;letter-spacing:.1em}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{border:1px solid #b9c4d2;padding:7px 9px;text-align:left}
+  th{background:#eef3f9;width:130px;font-weight:600;color:#3a4a5d}.detail th{width:auto}
+  .sign{margin-top:26px;display:flex;justify-content:space-between;font-size:12px}
+  .box{border:1px solid #b9c4d2;border-radius:6px;padding:10px 14px;width:46%}.box b{display:block;font-size:11px;color:#777;margin-bottom:4px}
+  .note{font-size:11px;color:#888;margin-top:22px;text-align:center}.bar{text-align:center;margin:18px 0}
+  .bar button{font-size:14px;padding:9px 22px;border:none;border-radius:8px;background:#3d6fb1;color:#fff;cursor:pointer}
+  @media print{.bar{display:none}}</style></head><body><div class="doc">
+  <div class="bar"><button onclick="window.print()">PDFとして保存 / 印刷</button></div>
+  <h1>配 車 依 頼 表</h1><div class="meta"><span>案件番号：${c.id}</span><span>発行日：2026/06/16</span></div>
+  <h2>案件情報</h2><table>
+    <tr><th>案件名</th><td>${c.title}</td></tr><tr><th>荷主</th><td>${c.shipper}</td></tr>
+    <tr><th>運行日</th><td>${c.runDate}</td></tr><tr><th>積地</th><td>${c.from}</td></tr>
+    <tr><th>卸地</th><td>${c.to}</td></tr><tr><th>指定車種</th><td>${c.truck}</td></tr><tr><th>備考</th><td>${c.note||'―'}</td></tr></table>
+  <h2>配車明細（受注：${subName(a.sub)}）</h2><table class="detail">
+    <tr><th>入場時間</th><th>車種</th><th>車番</th><th>乗務員名</th><th>電話番号</th><th>単価</th></tr>
+    <tr><td>${a.enter}</td><td>${a.ttype}</td><td>${a.plate}</td><td>${a.driver}</td><td>${a.tel}</td><td>${yen(a.price)}</td></tr></table>
+  <div class="sign"><div class="box"><b>発注（依頼元）</b>自社 配車課<br>${PRIME.email}</div>
+    <div class="box"><b>受注（運送）</b>${subName(a.sub)}<br>${subEmail(a.sub)}</div></div>
+  <div class="note">本書はデモ環境で自動生成された配車依頼表サンプルです。</div></div></body></html>`);
+  w.document.close();
+}
+
+/* ============ render ============ */
+function render(){
+  $('roleSel').innerHTML=ROLES.map(r=>`<option value="${r.id}" ${r.id===DB.cur?'selected':''}>${r.name}${r.type==='sub'?'（2次請け）':''}</option>`).join('');
+  renderMailBadge(); renderMailList();
+  $('side').innerHTML=sidebar();
+  const m=$('main');
+  if(isPrime()){
+    if(view.name==='new') m.innerHTML=newCaseForm();
+    else if(view.name==='detail') m.innerHTML=primeDetail(view.caseId);
+    else m.innerHTML=primeList();
+  } else {
+    if(view.name==='mypage') m.innerHTML=myPage();
+    else if(view.name==='detail') m.innerHTML=subDetail(view.caseId);
+    else m.innerHTML=subList();
+  }
+}
+
+function sidebar(){
+  const r=curRole(); const tab=DB.tab[r.type];
+  const items=isPrime()
+    ? [['cases','案件タスク一覧','▣'],['new','新規案件登録','＋']]
+    : [['cases','応募案件一覧','▣'],['mypage','ユーザー情報','◍']];
+  return `<div class="me"><b>${r.name}</b>${r.type==='prime'?'元請・管理者':'2次請け業者'}<br><span style="opacity:.75">${r.user}</span></div>
+    <div class="nav">${items.map(([k,label,ic])=>`<button class="${(view.name===k||(k==='cases'&&view.name==='list')||(k==='cases'&&view.name==='detail'))?'active':''}" onclick="nav('${k}')"><span class="ic">${ic}</span>${label}</button>`).join('')}</div>
+    <button class="reset" onclick="resetDemo()">デモを初期状態に戻す</button>`;
+}
+
+/* ---- 元請：案件一覧 ---- */
+function primeList(){
+  const cs=DB.cases;
+  const rows=cs.map(c=>{
+    const st=c.status==='open'?'<span class="status s-open">募集中</span>':'<span class="status s-done">発注済</span>';
+    return `<tr class="row-click zebra" onclick="go('detail','${c.id}')">
+      <td class="num">${c.id}</td><td><b>${c.title}</b><br><span style="color:var(--sub);font-size:12px">${c.from} → ${c.to}</span></td>
+      <td>${c.runDate}</td><td class="num">${yen(c.price)}</td><td>${c.publishTo.length}社</td><td class="num">${c.apps.length}件</td><td>${st}</td></tr>`;
+  }).join('');
+  return `<div class="crumb">ホーム ／ 案件タスク一覧</div><h1>案件タスク一覧</h1>
+  <p class="lead">登録した案件と応募状況を管理します。行をクリックで応募情報・発注へ。</p>
+  <div class="hint">⚙️ <div><b>このデモの操作：</b>「新規案件登録」→ 公開先へ自動通知 → 右上でアカウントを2次請けに切替えて応募 → 案件詳細で発注（他社へ失注通知）→ 受注側で配車依頼表PDF。</div></div>
+  <div style="margin-bottom:14px"><button class="btn" onclick="nav('new')">＋ 新規案件を登録</button></div>
+  <p class="countbar">該当 <b>${cs.length}</b> 件</p>
+  <div class="card"><div class="bd" style="padding:0">
+    <table class="listtable"><thead><tr><th>案件番号</th><th>案件名 / 区間</th><th>運行日</th><th>想定単価</th><th>公開先</th><th>応募</th><th>状態</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan=7 class="empty">案件がありません</td></tr>'}</tbody></table>
+  </div></div>`;
+}
+
+/* ---- 元請：新規登録 ---- */
+function newCaseForm(){
+  return `<div class="crumb">ホーム ／ 案件タスク一覧 ／ 新規案件登録</div>
+  <button class="back" onclick="nav('cases')">← 一覧に戻る</button>
+  <h1>新規案件の登録</h1><p class="lead">公開先に選んだ2次請会社へ、登録と同時に案件通知メールが自動送信されます。</p>
+  <div class="card"><div class="bd"><form onsubmit="registerCase(event)">
+    <div class="field"><label>案件名</label><input type="text" name="title" required placeholder="例）食品定温 大阪→名古屋 10t"></div>
+    <div class="two"><div class="field"><label>荷主</label><input type="text" name="shipper" placeholder="例）カネサ食品㈱"></div>
+      <div class="field"><label>運行日</label><input type="date" name="runDate" required value="2026-06-20"></div></div>
+    <div class="two"><div class="field"><label>積地</label><input type="text" name="from" required placeholder="例）大阪府茨木市"></div>
+      <div class="field"><label>卸地</label><input type="text" name="to" required placeholder="例）愛知県小牧市"></div></div>
+    <div class="two"><div class="field"><label>指定車種</label><input type="text" name="truck" placeholder="例）10tウィング"></div>
+      <div class="field"><label>想定単価（円）</label><input type="number" name="price" placeholder="48000"></div></div>
+    <div class="field"><label>備考</label><textarea name="note" placeholder="荷役条件・温度管理など"></textarea></div>
+    <div class="field"><label>公開先（2次請会社）＊案件ごとに選択</label>
+      <div class="pubs">${SUBS.map(s=>`<label class="pub"><input type="checkbox" name="pub" value="${s.id}">${s.name}</label>`).join('')}</div></div>
+    <div class="pill-row"><button class="btn" type="submit">登録して選択先へ通知</button>
+      <button class="btn light" type="button" onclick="nav('cases')">キャンセル</button></div>
+  </form></div></div>`;
+}
+
+/* ---- 元請：案件詳細 ---- */
+function primeDetail(id){
+  const c=caseById(id); if(!c) return primeList();
+  const st=c.status==='open'?'<span class="status s-open">募集中</span>':'<span class="status s-done">発注済</span>';
+  const rows=c.apps.map(a=>{
+    const badge=a.status==='won'?'<span class="status s-done">発注</span>':a.status==='lost'?'<span class="status s-lost">失注</span>':'<span class="status s-applied">応募中</span>';
+    const btn=(c.status==='open')?`<button class="btn green sm" onclick="order('${c.id}','${a.id}')">この応募者に発注</button>`
+      :(a.status==='won'?`<button class="btn ghost sm" onclick="haishaPDF('${c.id}')">配車依頼表PDF</button>`:'―');
+    return `<tr class="zebra"><td><b>${subName(a.sub)}</b><br><span style="color:var(--sub);font-size:12px">${a.at}</span></td>
+      <td>${a.enter}</td><td>${a.ttype}</td><td>${a.plate}</td><td>${a.driver}</td><td class="num">${a.tel}</td>
+      <td class="num"><b>${yen(a.price)}</b></td><td>${badge}</td><td>${btn}</td></tr>`;
+  }).join('');
+  return `<div class="crumb">ホーム ／ 案件タスク一覧 ／ ${c.id}</div>
+  <button class="back" onclick="nav('cases')">← 一覧に戻る</button>
+  <h1>${c.title} ${st}</h1><p class="lead">案件番号 ${c.id}</p>
+  <div class="card"><div class="hd"><h2>案件情報</h2></div><div class="bd">
+    <table class="spec"><tr><th>荷主</th><td>${c.shipper||'―'}</td><th>運行日</th><td>${c.runDate}</td></tr>
+      <tr><th>積地</th><td>${c.from}</td><th>卸地</th><td>${c.to}</td></tr>
+      <tr><th>指定車種</th><td>${c.truck||'―'}</td><th>想定単価</th><td>${yen(c.price)}</td></tr>
+      <tr><th>公開先</th><td colspan="3">${c.publishTo.map(subName).join('、')}</td></tr>
+      <tr><th>備考</th><td colspan="3">${c.note||'―'}</td></tr></table></div></div>
+  <div class="card"><div class="hd"><h2>応募情報（${c.apps.length}件）</h2>
+    <span style="margin-left:auto;color:var(--sub);font-size:12px">${c.status==='done'?'発注済':'発注すると他社へ自動で失注通知'}</span></div>
+    <div class="bd" style="padding:0">
+    <table class="listtable"><thead><tr><th>会社 / 応募日時</th><th>入場</th><th>車種</th><th>車番</th><th>乗務員名</th><th>電話番号</th><th>希望単価</th><th>状態</th><th></th></tr></thead>
+    <tbody>${rows||'<tr><td colspan=9 class="empty">まだ応募がありません。右上で2次請けアカウントに切替えて応募できます。</td></tr>'}</tbody></table>
+  </div></div>`;
+}
+
+/* ---- 2次請け：応募案件一覧 ---- */
+function subList(){
+  const me=DB.cur; const visible=DB.cases.filter(c=>c.publishTo.includes(me));
+  const rows=visible.map(c=>{
+    const mine=c.apps.find(a=>a.sub===me);
+    let st='<span class="status s-open">募集中</span>',act=`<button class="btn green sm" onclick="go('detail','${c.id}')">応募する</button>`;
+    if(mine&&mine.status==='applied'){ st='<span class="status s-applied">応募済</span>'; act=`<button class="btn light sm" onclick="go('detail','${c.id}')">内容確認</button>`; }
+    if(c.status==='done'){
+      if(mine&&mine.status==='won'){ st='<span class="status s-done">受注</span>'; act=`<button class="btn ghost sm" onclick="haishaPDF('${c.id}')">配車依頼表PDF</button>`; }
+      else if(mine&&mine.status==='lost'){ st='<span class="status s-lost">失注</span>'; act='―'; }
+      else { st='<span class="status s-applied">他社発注</span>'; act='―'; }
+    }
+    return `<tr class="zebra"><td class="num">${c.id}</td><td><b>${c.title}</b><br><span style="color:var(--sub);font-size:12px">${c.from} → ${c.to}</span></td>
+      <td>${c.runDate}</td><td>${c.truck}</td><td class="num">${yen(c.price)}</td><td>${st}</td><td>${act}</td></tr>`;
+  }).join('');
+  return `<div class="crumb">マイページ ／ 応募案件一覧</div><h1>応募案件一覧</h1>
+  <p class="lead">自社が公開先に選ばれている案件のみ表示されます（会員制・自社あてのみ閲覧可）。</p>
+  <div class="hint">🚚 <div><b>2次請け業者の画面です。</b>「応募する」で入場時間・車種・車番・乗務員名・電話・希望単価を入力。発注されると配車依頼表PDFを取得できます。</div></div>
+  <div class="filterbar"><div class="field"><label>運行日</label><input type="date"></div>
+    <div class="field"><label>車種</label><select><option>すべて</option><option>10tウィング</option><option>4t箱</option></select></div>
+    <button class="btn navy sm" onclick="toast('デモでは絞り込みは省略しています')">検索</button></div>
+  <p class="countbar">該当 <b>${visible.length}</b> 件</p>
+  <div class="card"><div class="bd" style="padding:0">
+    <table class="listtable"><thead><tr><th>案件番号</th><th>案件名 / 区間</th><th>運行日</th><th>車種</th><th>想定単価</th><th>状態</th><th></th></tr></thead>
+    <tbody>${rows||'<tr><td colspan=7 class="empty">現在、貴社あての公開案件はありません。</td></tr>'}</tbody></table>
+  </div></div>`;
+}
+
+/* ---- 2次請け：案件詳細 / 応募 ---- */
+function subDetail(id){
+  const c=caseById(id); if(!c) return subList();
+  const me=DB.cur;
+  if(!c.publishTo.includes(me)) return `<button class="back" onclick="nav('cases')">← 一覧に戻る</button><div class="empty">この案件は貴社に公開されていません。</div>`;
+  const mine=c.apps.find(a=>a.sub===me); let panel='';
+  if(mine&&mine.status==='won'){
+    panel=`<div class="card"><div class="hd"><h2>受注しました</h2><span class="status s-done" style="margin-left:auto">受注</span></div><div class="bd">
+      <p style="margin-top:0">本案件は貴社に発注されました。配車依頼表をダウンロードしてください。</p>
+      <button class="btn" onclick="haishaPDF('${c.id}')">配車依頼表PDFをダウンロード</button></div></div>`;
+  } else if(mine&&mine.status==='lost'){
+    panel=`<div class="card"><div class="bd"><span class="status s-lost">失注</span> 本案件は他社への発注となりました。</div></div>`;
+  } else if(mine){
+    panel=`<div class="card"><div class="hd"><h2>応募内容</h2><span class="status s-applied" style="margin-left:auto">応募済・結果待ち</span></div><div class="bd">
+      <table class="spec"><tr><th>入場時間</th><td>${mine.enter}</td><th>車種</th><td>${mine.ttype}</td></tr>
+        <tr><th>車番</th><td>${mine.plate}</td><th>乗務員名</th><td>${mine.driver}</td></tr>
+        <tr><th>電話番号</th><td>${mine.tel}</td><th>希望単価</th><td>${yen(mine.price)}</td></tr></table></div></div>`;
+  } else if(c.status==='open'){
+    panel=`<div class="card"><div class="hd"><h2>この案件に応募する</h2></div><div class="bd"><form onsubmit="applyCase(event,'${c.id}')">
+      <div class="three"><div class="field"><label>入場時間</label><input type="time" name="enter" required value="08:00"></div>
+        <div class="field"><label>車種</label><input type="text" name="ttype" required value="${c.truck||''}"></div>
+        <div class="field"><label>車番</label><input type="text" name="plate" required placeholder="なにわ100 あ 12-34"></div></div>
+      <div class="three"><div class="field"><label>乗務員名</label><input type="text" name="driver" required placeholder="山田 太郎"></div>
+        <div class="field"><label>電話番号</label><input type="text" name="tel" required placeholder="090-1234-5678"></div>
+        <div class="field"><label>希望単価（円）</label><input type="number" name="price" required placeholder="${c.price}"></div></div>
+      <button class="btn green" type="submit">この内容で応募する</button></form></div></div>`;
+  } else { panel=`<div class="card"><div class="bd">この案件は募集を終了しました（他社発注）。</div></div>`; }
+  return `<div class="crumb">マイページ ／ 応募案件一覧 ／ ${c.id}</div>
+  <button class="back" onclick="nav('cases')">← 一覧に戻る</button>
+  <h1>${c.title}</h1><p class="lead">案件番号 ${c.id}</p>
+  <div class="card"><div class="hd"><h2>案件情報</h2></div><div class="bd">
+    <table class="spec"><tr><th>荷主</th><td>${c.shipper||'―'}</td><th>運行日</th><td>${c.runDate}</td></tr>
+      <tr><th>積地</th><td>${c.from}</td><th>卸地</th><td>${c.to}</td></tr>
+      <tr><th>指定車種</th><td>${c.truck||'―'}</td><th>想定単価</th><td>${yen(c.price)}</td></tr>
+      <tr><th>備考</th><td colspan="3">${c.note||'―'}</td></tr></table></div></div>
+  ${panel}`;
+}
+
+/* ---- 2次請け：ユーザー情報 ---- */
+function myPage(){
+  const r=curRole();
+  return `<div class="crumb">マイページ ／ ユーザー情報</div><h1>ユーザー情報</h1>
+  <p class="lead">会員登録情報を確認・編集します。</p>
+  <div class="card" style="max-width:560px"><div class="bd">
+    <table class="spec"><tr><th>会社名</th><td>${r.name}</td></tr>
+      <tr><th>担当者名</th><td>${r.user}</td></tr>
+      <tr><th>メールアドレス</th><td>${r.email}</td></tr>
+      <tr><th>パスワード</th><td>●●●●●●●●</td></tr></table>
+    <div class="pill-row" style="margin-top:14px"><button class="btn light" onclick="toast('デモのため編集は省略しています')">編集</button></div>
+  </div></div>`;
+}
+
+render();
+</script>
+</body>
+</html>
